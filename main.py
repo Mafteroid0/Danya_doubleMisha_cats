@@ -23,7 +23,7 @@ async def main():
     ) as web_client:
         data = {'imageId': '2'}
         resp: httpx.Response = await web_client.post(
-            '/art/stage/info',
+            '/art/factory/generate',
             headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
             # headers={'Content-Disposition': 'form-data; imageId="2"'}
             # data=data
@@ -34,9 +34,12 @@ async def main():
             print(resp.text)
             raise ResponseError()
 
-        with open('.temp.json', 'w') as f:
+        with open('.temp.json', 'w+') as f:
             json.dump(resp.json(), f, indent=2, ensure_ascii=False)
 
+        color1 = hex_convert(resp.json()['response']['1']['color'])
+        color2 = hex_convert(resp.json()['response']['2']['color'])
+        color3 = hex_convert(resp.json()['response']['3']['color'])
         resp: ServerResponse = ServerResponse(resp.text)
         print(resp.info.tick)
 
