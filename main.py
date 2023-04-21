@@ -6,7 +6,6 @@ import httpx
 from loguru import logger
 
 from typing_ import ServerResponse
-from color_conventer import hex_convert, mix_colors
 from taskpool import TaskPoolExecutor
 
 RgbTuple = tuple[int, int, int]
