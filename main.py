@@ -11,8 +11,8 @@ async def main():
         async with web_client.post(
             '/art/stage/next',
             headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
-        ) as resp:
-            pass
+        ) as resp:  # type: httpx.Response
+            resp
 
 
 asyncio.run(main())
