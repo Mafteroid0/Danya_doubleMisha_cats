@@ -7,12 +7,27 @@ from loguru import logger
 
 from typing_ import ServerResponse
 from color_conventer import hex_convert
+from taskpool import TaskPoolExecutor
 
-temp_json_file = Path('.temp.json')
+colors_storage: dict[str: int] = {}
 
 
 class ResponseError(Exception):
     pass
+
+
+async def pick_color(web_session: httpx.AsyncClient, color_id: int, tick: int):
+    return await web_session.post('/art/factory/pick', data={'num': color_id, 'tick': tick})
+
+
+async def check_and_get_colors(web_session: httpx.AsyncClient):
+    async with TaskPoolExecutor(3) as executor:
+        while True:
+            resp = ServerResponse((await web_session.post('/art/factory/generate', data={'Content-Type': 'multipart/form-data'})).text)
+            print(resp.response.to_dict())
+            for _ in range(3):
+                await executor.put()
+            await asyncio.sleep(1)
 
 
 @logger.catch()
@@ -21,6 +36,8 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_client:
+        await check_and_get_colors(web_client)
+
         data = {'imageId': '2'}
         resp: httpx.Response = await web_client.post(
             '/art/factory/generate',
