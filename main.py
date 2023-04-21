@@ -22,12 +22,16 @@ async def main():
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_client:
         resp: httpx.Response = await web_client.post(
-            '/art/stage/next',
-            headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
+            '/art/stage/next-start',
+            headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW;',
+                     'Content-Disposition': 'form-data;'
+                                            'imageId="2"'}
+            # content=data
         )
 
-        print(resp.text)
+        print(resp.status_code)
         if resp.status_code != 200:
+            print(resp.text)
             raise ResponseError()
 
         with open('.temp.json', 'w') as f:
