@@ -28,7 +28,9 @@ async def main():
         if resp.status_code != 200:
             raise ResponseError()
 
-        temp_json_file.write_text(resp.text)
+        with open('new_file.json', 'w') as f:
+            json.dump(resp.json(), f, indent=2)
+            print("json создан")
 
 
 asyncio.run(main())
