@@ -5,6 +5,8 @@ from pathlib import Path
 import httpx
 from loguru import logger
 
+from typing_ import ServerResponse
+
 
 temp_json_file = Path('.temp.json')
 
@@ -29,6 +31,9 @@ async def main():
             raise ResponseError()
 
         temp_json_file.write_text(resp.text)
+
+        resp: ServerResponse = ServerResponse(resp.text)
+        print(resp.info.tick)
 
 
 asyncio.run(main())
