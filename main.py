@@ -7,6 +7,7 @@ from loguru import logger
 
 from typing_ import ServerResponse
 from taskpool import TaskPoolExecutor
+from not_async_func import closest_color
 
 RgbTuple = tuple[int, int, int]
 
@@ -56,36 +57,27 @@ async def main():
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_client:
         # await check_and_get_colors(web_client)
-
-        data = {"angleHorizontal": "0",
-                "angleVertical": "30",
-                "power": "500",
-                "colors[9428803]": "1",
-                "colors[4936479]": "1",
-
-                }
+        # используем дату, если мы хотим какую-то хуйню передать и она динамическая
+        data = {'imageId': '2'}
         resp: httpx.Response = await web_client.post(
-            '/art/ballista/shoot',
-            data=data
+            '/art/colors/list',
+            headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
+            # headers={'Content-Disposition': 'form-data; imageId="2"'}
+            # data=data
         )
 
         print(resp.status_code)
         print(resp.text)
         if resp.status_code != 200:
-            print(resp.text)
+            # print(resp.text)
             raise ResponseError()
-
-        # color1 = hex_convert(resp.json()["response"]["1"]["color"])
-        # red = (194, 39, 45)
-        # black = (36, 36, 36)
-        # color_list = resp.json()["response"]
-        # print("colorlist", color_list)
 
         with open('.temp.json', 'w') as f:
             json.dump(resp.json(), f, indent=2, ensure_ascii=False)
 
-        # mix_colors(red,)
-        # mix_colors(black, )
+        color_list = resp.json()["response"]
+        red, black = closest_color(color_list)
+        print(f'самый красный: {red}\nсамый чёрн: {black}')
         resp: ServerResponse = ServerResponse(resp.text)
         print(resp.info.tick)
 
@@ -112,6 +104,7 @@ async def check_position():
             print(resp.text)
             raise ResponseError()
 
+
 @logger.catch()
 async def take_info():
     async with httpx.AsyncClient(
@@ -123,16 +116,3 @@ async def take_info():
         resp: httpx.Response = await web_client.post(
             '/art/stage/info',
         )
-
-        print(resp.status_code)
-        print(resp.text)
-        if resp.status_code != 200:
-            print(resp.text)
-            raise ResponseError()
-
-
-# asyncio.run(main())
-# asyncio.run(check_position())
-# asyncio.run(take_info())
-# TODO: Сделать функции с вводом параметров
-# TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
