@@ -26,8 +26,8 @@ class ColorPickedError(Exception):
 async def pick_color(web_session: httpx.AsyncClient, color_id: int, tick: int):
     resp = await web_session.post('/art/factory/pick', data={'num': color_id, 'tick': tick})
     resp = ServerResponse(resp.text)
-    if not resp.success:
-        print(resp.to_dict())
+    # if not resp.success:
+    #     print(resp.to_dict())
 
 
 async def check_and_get_colors(web_session: httpx.AsyncClient):
@@ -49,15 +49,20 @@ async def main():
     ) as web_client:
         # await check_and_get_colors(web_client)
 
-        data = {'imageId': '2'}
+        data = {"angleHorizontal": "0",
+                "angleVertical": "30",
+                "power": "500",
+                "colors[9428803]": "1",
+                "colors[4936479]": "1",
+
+                }
         resp: httpx.Response = await web_client.post(
-            '/art/colors/list',
-            headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
-            # headers={'Content-Disposition': 'form-data; imageId="2"'}
-            # data=data
+            '/art/ballista/shoot',
+            data=data
         )
 
         print(resp.status_code)
+        print(resp.text)
         if resp.status_code != 200:
             print(resp.text)
             raise ResponseError()
@@ -68,10 +73,8 @@ async def main():
         # color_list = resp.json()["response"]
         # print("colorlist", color_list)
 
-
         with open('.temp.json', 'w') as f:
             json.dump(resp.json(), f, indent=2, ensure_ascii=False)
-
 
         # mix_colors(red,)
         # mix_colors(black, )
@@ -81,4 +84,47 @@ async def main():
         await asyncio.gather(asyncio.create_task(check_and_get_colors(web_client)))
 
 
-asyncio.run(main())
+@logger.catch()
+async def check_position():
+    async with httpx.AsyncClient(
+            base_url='http://api.datsart.dats.team/',
+            headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
+    ) as web_client:
+        # await check_and_get_colors(web_client)
+
+        data = {"id": "1682103745449907326"}
+        resp: httpx.Response = await web_client.post(
+            '/art/state/queue',
+            data=data
+        )
+
+        print(resp.status_code)
+        print(resp.text)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise ResponseError()
+
+@logger.catch()
+async def take_info():
+    async with httpx.AsyncClient(
+            base_url='http://api.datsart.dats.team/',
+            headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
+    ) as web_client:
+        # await check_and_get_colors(web_client)
+
+        resp: httpx.Response = await web_client.post(
+            '/art/stage/info',
+        )
+
+        print(resp.status_code)
+        print(resp.text)
+        if resp.status_code != 200:
+            print(resp.text)
+            raise ResponseError()
+
+
+# asyncio.run(main())
+# asyncio.run(check_position())
+# asyncio.run(take_info())
+# TODO: Сделать функции с вводом параметров
+# TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
