@@ -1,5 +1,5 @@
 import asyncio
-
+import json
 import httpx
 
 
@@ -12,7 +12,11 @@ async def main():
             '/art/stage/next',
             headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
         )
-        print(resp.json())
+
+        with open('new_file.json', 'w') as f:
+            json.dump(resp.json(), f, indent=2)
+            print("json создан")
+
 
 
 asyncio.run(main())
