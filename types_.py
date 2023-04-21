@@ -97,9 +97,12 @@ class FriendlyDict(KeyToAttrMixin):
                     raise TypeError(f'Dict item {key} not mentioned in the annotations')
                 continue
             if type(value) != value_excepted_type:  # Потому что пайчарм ругается на isinstance
-                if issubclass(value_excepted_type, FriendlyDict) and value_excepted_type != FriendlyDict:
-                    d[key] = value_excepted_type(value)
-                    continue
+                try:
+                    if issubclass(value_excepted_type, FriendlyDict) and value_excepted_type != FriendlyDict:
+                        d[key] = value_excepted_type(value)
+                        continue
+                except TypeError:
+                    pass
                 if aggressive:
                     raise TypeError(f'Dict item {key} have type {type(value)}, but excepted {value_excepted_type}')
         return d
