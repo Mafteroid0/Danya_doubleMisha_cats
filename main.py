@@ -9,24 +9,36 @@ from typing_ import ServerResponse
 from color_conventer import hex_convert
 from taskpool import TaskPoolExecutor
 
-colors_storage: dict[str: int] = {}
+RgbTuple = tuple[int, int, int]
+
+TARGET_COLORS: set[RgbTuple] = set()
+
+colors_storage: dict[str, int] = {}
 
 
 class ResponseError(Exception):
     pass
 
 
+class ColorPickedError(Exception):
+    pass
+
+
 async def pick_color(web_session: httpx.AsyncClient, color_id: int, tick: int):
-    return await web_session.post('/art/factory/pick', data={'num': color_id, 'tick': tick})
+    resp = await web_session.post('/art/factory/pick', data={'num': color_id, 'tick': tick})
+    resp = ServerResponse(resp.text)
+    if not resp.success:
+        print(resp.to_dict())
 
 
 async def check_and_get_colors(web_session: httpx.AsyncClient):
     async with TaskPoolExecutor(3) as executor:
         while True:
-            resp = ServerResponse((await web_session.post('/art/factory/generate', data={'Content-Type': 'multipart/form-data'})).text)
-            print(resp.response.to_dict())
-            for _ in range(3):
-                await executor.put()
+            resp = ServerResponse(
+                (await web_session.post('/art/factory/generate', data={'Content-Type': 'multipart/form-data'})).text)
+            # print(resp.response.to_dict())
+            for i in range(1, 4):
+                await executor.put(pick_color(web_session, color_id=i, tick=resp.info.tick))
             await asyncio.sleep(1)
 
 
@@ -36,7 +48,6 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_client:
-        await check_and_get_colors(web_client)
 
         data = {'imageId': '2'}
         resp: httpx.Response = await web_client.post(
@@ -59,6 +70,8 @@ async def main():
         color3 = hex_convert(resp.json()['response']['3']['color'])
         resp: ServerResponse = ServerResponse(resp.text)
         print(resp.info.tick)
+
+        await asyncio.gather(asyncio.create_task(check_and_get_colors(web_client)))
 
 
 asyncio.run(main())
