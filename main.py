@@ -31,7 +31,7 @@ async def main():
             raise ResponseError()
 
         with open('.temp.json', 'w') as f:
-            json.dump(resp.json(), f, indent=2)
+            json.dump(resp.json(), f, indent=2, ensure_ascii=False)
 
         resp: ServerResponse = ServerResponse(resp.text)
         print(resp.info.tick)
