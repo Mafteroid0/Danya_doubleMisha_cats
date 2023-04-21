@@ -5,8 +5,8 @@ class ResponseInfo(FriendlyDict):
     m: int
     t: float
     c: int
-    tick: int | None = None
-    ns: int | None = None
+    tick: int
+    ns: int
 
 
 class Stage(FriendlyDict):
@@ -24,17 +24,8 @@ class Image(FriendlyDict):
     height: int
 
 
-class GetNextStageResponseField(FriendlyDict):
-    stage: Stage
-    images: list[Image]
-
-
 class Queue(FriendlyDict):
     id: int
-
-
-class StartNextStageResponseField(FriendlyDict):
-    queue: Queue
 
 
 class ShortImage(FriendlyDict):
@@ -60,16 +51,19 @@ class Stats(FriendlyDict):
     shootsMissesPartially: int
 
 
-class GetActualInfoStageResponseField(FriendlyDict):
+class ResponseField(FriendlyDict):
     stage: Stage
     images: list[Image]
     selectedImage: ShortImage
     canvas: Canvas
     stats: Stats
+    queue: Queue
+    stage: Stage
+    images: list[Image]
 
 
 class ServerResponse(FriendlyDict):
     success: bool
     status: int
     info: ResponseInfo
-    response: GetNextStageResponseField | StartNextStageResponseField | GetActualInfoStageResponseField
+    response: ResponseField
