@@ -1,7 +1,12 @@
 import asyncio
 import json
+from pathlib import Path
+
 import httpx
 from loguru import logger
+
+
+temp_json_file = Path('.temp.json')
 
 
 class ResponseError(Exception):
@@ -23,10 +28,7 @@ async def main():
         if resp.status_code != 200:
             raise ResponseError()
 
-        with open('new_file.json', 'w') as f:
-            json.dump(resp.json(), f, indent=2)
-            print("json создан")
-
+        temp_json_file.write_text(resp.text)
 
 
 asyncio.run(main())
