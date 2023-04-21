@@ -30,9 +30,8 @@ async def main():
         if resp.status_code != 200:
             raise ResponseError()
 
-        with open('new_file.json', 'w') as f:
+        with open('.temp.json', 'w') as f:
             json.dump(resp.json(), f, indent=2)
-            print("json создан")
 
         resp: ServerResponse = ServerResponse(resp.text)
         print(resp.info.tick)
