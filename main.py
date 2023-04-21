@@ -32,13 +32,21 @@ async def pick_color(web_session: httpx.AsyncClient, color_id: int, tick: int):
 
 async def check_and_get_colors(web_session: httpx.AsyncClient):
     async with TaskPoolExecutor(3) as executor:
+        last_tick = 0
         while True:
             resp = ServerResponse(
                 (await web_session.post('/art/factory/generate', data={'Content-Type': 'multipart/form-data'})).text)
-            # print(resp.response.to_dict())
+
+            if resp.info.tick == last_tick:
+                await asyncio.sleep(0)
+                continue
+
             for i in range(1, 4):
                 await executor.put(pick_color(web_session, color_id=i, tick=resp.info.tick))
-            await asyncio.sleep(1)
+
+            last_tick = resp.info.tick
+
+            await asyncio.sleep(0)
 
 
 @logger.catch()
