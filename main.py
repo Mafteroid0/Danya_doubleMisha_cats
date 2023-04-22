@@ -48,7 +48,8 @@ async def check_and_get_colors(web_session: httpx.AsyncClient):
             await asyncio.sleep(0)
 
 
-async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int, factory_color: int):# надо передать в tuple и список хуярить если цветов нескл
+async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int,
+                factory_color: int):  # надо передать в tuple и список хуярить если цветов нескл
     async with TaskPoolExecutor(2) as executor:  #
         # colors_info = ServerResponse(
         #     (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
@@ -94,35 +95,40 @@ async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
 async def color_thing(web_session: httpx.AsyncClient):
     print("122\n", mix_colors((0, 12, 45), (120, 50, 11)))
 
+
 async def analyze_shoot(web_session: httpx.AsyncClient):
-    img = httpx.get("http://s.datsart.dats.team/game/image/shared/2.png") #картинка к которой мы стремиися
+    img = httpx.get("http://s.datsart.dats.team/game/image/shared/2.png")  # картинка к которой мы стремиися
     perfect_img = Image.open(BytesIO(img.content))
-
-
-    canvas = "http://s.datsart.dats.team/game/canvas/238/108.png" #наша картинка
+    canvas = "http://s.datsart.dats.team/game/canvas/238/108.png"  # наша картинка
     resp = httpx.get(canvas)
     img = Image.open(BytesIO(resp.content))
-    color_list = await get_pots(web_session)
+    color_list = []
+    _ = asyncio.create_task(update_color_list(web_session, color_list))
     for x in range(250):
         for y in range(250):
-            pixel_color_canvas = img.getpixel((x, y)) #собираем с нашей картинки пиксель
-            target_pixel = perfect_img.getpixel((x, y)) #собираем с нужной картинки пиксель
+            await asyncio.sleep(0)
+            pixel_color_canvas = img.getpixel((x, y))  # собираем с нашей картинки пиксель
+            target_pixel = perfect_img.getpixel((x, y))  # собираем с нужной картинки пиксель
             d = distance(target_pixel, pixel_color_canvas)
             if pixel_color_canvas == (255, 255, 255) and d < 0.1:
-                continue #похуй это белый пиксель похуй похуй похуй мне эй
-            if d > 0.27: #пиксели разные, надо красить. 0.07471591718924561 - дистанция между белым нужного и белым нашего канваса
-                #вызов функции
-                # print(d)
-                # print(f'perf:{target_pixel} canvas: {pixel_color_canvas}')
+                continue  # похуй это белый пиксель похуй похуй похуй мне эй
+            if d > 0.27:  # пиксели разные, надо красить. 0.07471591718924561 - дистанция между белым нужного и белым нашего канваса
+                print(color_list)
+
                 color = match_colors_combination(target_pixel, color_list.response, weight=1)
                 radius, horizontal = shoot_calulating(x, y)
                 pwr = (radius * 78.9281) / 564
                 # await shoot(web_session, horisontal, 1, pwr)  # 42.09 - 42.1
                 # 78.9281 - край
+                await shoot(web_session, horizontal=horizontal, vertical=1, power=pwr, factory_color=color)
 
-                await shoot(web_session, horizontal=horizontal, vertical=radius, power=pwr, factory_color=color)
 
-
+async def update_color_list(web_session, color_list):
+    while True:
+        color_list += await get_pots(web_session)
+        print("128")
+        await asyncio.sleep(1)
+        color_list.clear()
 
 
 # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
@@ -134,9 +140,7 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_session:
-
         await analyze_shoot(web_session)
-
 
 
 @logger.catch()
