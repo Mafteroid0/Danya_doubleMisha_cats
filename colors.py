@@ -70,10 +70,22 @@ def match_colors_combination(
 
         del new_available_colors
 
+    min_distance = 10
+    variant_with_min_distance = None
+
     for variant in (itertools.product(available_colors, repeat=weight)):
-        if distance(mix_colors(*variant), target_color) <= stop_distance:
+        act_distance = distance(mix_colors(*variant), target_color)
+
+        if act_distance <= stop_distance:
             return variant
-    return None
+        elif act_distance <= min_distance:
+            variant_with_min_distance = variant
+            min_distance = act_distance
+
+    if variant_with_min_distance is None:
+        raise ValueError('Кажется, вы передали пустой available_colors')
+
+    return variant_with_min_distance
 
 # match_colors_combination(
 #     (1, 2, 3),
