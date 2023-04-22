@@ -9,7 +9,8 @@ from typing_ import ServerResponse
 from taskpool import TaskPoolExecutor
 from colors import closest_color
 
-RgbTuple = tuple[int, int, int]
+from typing_ import RgbTuple
+
 
 TARGET_COLORS: set[RgbTuple] = set()
 
