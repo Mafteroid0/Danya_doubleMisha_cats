@@ -73,6 +73,7 @@ def match_colors_combination(
     for variant in (itertools.product(available_colors, repeat=weight)):
         if distance(mix_colors(*variant), target_color) <= stop_distance:
             return variant
+    return None
 
 # match_colors_combination(
 #     (1, 2, 3),
