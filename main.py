@@ -94,7 +94,7 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
     print("93", resp)
 
 
-def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
+async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
     while True:
         resp = ServerResponse(
             (await web_session.post('/art/state/queue', data={'id': shoot_id}))
