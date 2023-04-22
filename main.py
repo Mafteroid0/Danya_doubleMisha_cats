@@ -3,11 +3,13 @@ import json
 
 import httpx
 from loguru import logger
+from PIL import Image
+from io import BytesIO
 from podbor_params import shoot_calulating
 from taskpool import TaskPoolExecutor
 from typing_ import RgbTuple
 from typing_ import ServerResponse
-from colors import mix_colors
+from colors import mix_colors, match_colors_combination, distance
 
 TARGET_COLORS: set[RgbTuple] = set()
 
@@ -46,11 +48,11 @@ async def check_and_get_colors(web_session: httpx.AsyncClient):
             await asyncio.sleep(0)
 
 
-async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int):
+async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int, factory_color: int):# надо передать в tuple и список хуярить если цветов нескл
     async with TaskPoolExecutor(2) as executor:  #
-        colors_info = ServerResponse(
-            (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
-        color = [*colors_info.response.keys()][0]
+        # colors_info = ServerResponse(
+        #     (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
+        # color = [*colors_info.response.keys()][0]
         shoot_resp = ServerResponse(
             (
                 await web_session.post(
@@ -59,14 +61,14 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
                         'angleHorizontal': horizontal,
                         'angleVertical': vertical,
                         'power': power,
-                        f'colors[{color}]': 1
+                        f'colors[{factory_color}]': 1
                     }
                 )
             ).text
         )
-        # print(shoot_resp)
+        print(shoot_resp)
         # print('id =', shoot_resp.response.queue.id)
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.25)
         # resp = await wait_for_shoot_info(web_session, shoot_resp.response.queue.id)
 
 
@@ -92,8 +94,35 @@ async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
 async def color_thing(web_session: httpx.AsyncClient):
     print("122\n", mix_colors((0, 12, 45), (120, 50, 11)))
 
+async def analyze_shoot(web_session: httpx.AsyncClient):
+    img = httpx.get("http://s.datsart.dats.team/game/image/shared/2.png") #картинка к которой мы стремиися
+    perfect_img = Image.open(BytesIO(img.content))
 
-#1 1682144585168121910
+
+    canvas = "http://s.datsart.dats.team/game/canvas/238/108.png" #наша картинка
+    resp = httpx.get(canvas)
+    img = Image.open(BytesIO(resp.content))
+    color_list = await get_pots(web_session)
+    for x in range(250):
+        for y in range(250):
+            pixel_color_canvas = img.getpixel((x, y)) #собираем с нашей картинки пиксель
+            target_pixel = perfect_img.getpixel((x, y)) #собираем с нужной картинки пиксель
+            d = distance(target_pixel, pixel_color_canvas)
+            if pixel_color_canvas == (255, 255, 255) and d < 0.1:
+                continue #похуй это белый пиксель похуй похуй похуй мне эй
+            if d > 0.27: #пиксели разные, надо красить. 0.07471591718924561 - дистанция между белым нужного и белым нашего канваса
+                #вызов функции
+                # print(d)
+                # print(f'perf:{target_pixel} canvas: {pixel_color_canvas}')
+                color = match_colors_combination(target_pixel, color_list.response, weight=1)
+                radius, horizontal = shoot_calulating(x, y)
+                pwr = (radius * 78.9281) / 564
+                # await shoot(web_session, horisontal, 1, pwr)  # 42.09 - 42.1
+                # 78.9281 - край
+
+                await shoot(web_session, horizontal=horizontal, vertical=radius, power=pwr, factory_color=color)
+
+
 
 
 # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
@@ -105,29 +134,8 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_session:
-        # await shoot(web_session, 1, 1, 500)
-        # for vertical in range(30, 101, 10):
-        #     for power in range(1, 1001, 10):
-        #         oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
 
-                x, y = 155, 137
-                radius, horisontal = shoot_calulating(x, y)
-                pwr = (radius * 78.9281) / 564
-                await shoot(web_session, horisontal, 1, pwr) # 42.09 - 42.1
-                #78.9281 - край
-        #         shoots, Misses, MissesPartially = await take_info(web_session)
-        #
-        #         if MissesPartially - oldMissesPartially == 1:
-        #             print("попал частично!")
-        #             print(f'vertical: {vertical}\nhorizontal: 1\npower: {power}')
-        #         elif shoots - oldshoots != (Misses - oldMisses):
-        #             print("попал полностью!")
-        #             print(f'vertical: {vertical}\nhorizontal: 1\npower: {power}')
-        #         print('-----------------------')
-                # else:
-                #     print("не попал")
-
-        # print(take_info)
+        await analyze_shoot(web_session)
 
 
 

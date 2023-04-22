@@ -13,7 +13,7 @@ from typing_ import RgbTuple
 #     def is_similar(self):
 
 
-def encode_color(encoded_color: int | str) -> RgbTuple:
+def decode_color(encoded_color: int | str) -> RgbTuple:
     if isinstance(encoded_color, str):
         encoded_color = int(encoded_color)
     color = bin(encoded_color)[2:]
@@ -39,7 +39,7 @@ def closest_color(json_list) -> tuple[RgbTuple, RgbTuple]:
     closest_red_color = ""
 
     for color in json_list:  # 24bit color
-        rgb = encode_color(int(color))  # получили ргб
+        rgb = decode_color(int(color))  # получили ргб
 
         red_difference = distance(red, rgb)
         black_difference = distance(black, rgb)
@@ -65,7 +65,7 @@ def match_colors_combination(
         new_available_colors = {}
 
         for key, value in available_colors.items():
-            new_available_colors[encode_color(key)] = value
+            new_available_colors[decode_color(key)] = value
         available_colors = new_available_colors
 
         del new_available_colors
@@ -77,7 +77,7 @@ def match_colors_combination(
         act_distance = distance(mix_colors(*variant), target_color)
 
         if act_distance <= stop_distance:
-            return variant
+            return encode_color(variant)
         elif act_distance <= min_distance:
             variant_with_min_distance = variant
             min_distance = act_distance
@@ -85,29 +85,8 @@ def match_colors_combination(
     if variant_with_min_distance is None:
         raise ValueError('Кажется, вы передали пустой available_colors')
 
-    return variant_with_min_distance
+    return encode_color(variant_with_min_distance)
 
-# match_colors_combination(
-#     (1, 2, 3),
-#     {
-#         "211851": 2,
-#         "211899": 15,
-#         "211947": 9,
-#         "212807": 9,
-#         "212819": 11,
-#         "212823": 13,
-#         "212903": 12,
-#         "212979": 6,
-#         "213767": 15,
-#         "213867": 11,
-#         "213903": 12,
-#         "213951": 15,
-#         "213959": 11,
-#         "214815": 7,
-#         "214847": 10,
-#         "214855": 11,
-#         "214875": 9,
-#         "214915": 10
-#     },
-#     weight=2
-# )
+def encode_color(rgb):
+    d = list(rgb[0])
+    return ((d[0] << 16) + (d[1] << 8) + d[2]) #r g b
