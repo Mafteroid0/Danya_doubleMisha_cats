@@ -7,6 +7,7 @@ from loguru import logger
 from taskpool import TaskPoolExecutor
 from typing_ import RgbTuple
 from typing_ import ServerResponse
+from colors import mix_colors
 
 TARGET_COLORS: set[RgbTuple] = set()
 
@@ -42,19 +43,15 @@ async def check_and_get_colors(web_session: httpx.AsyncClient):
 
             last_tick = resp.info.tick
 
-            # colors_info = await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})
-            # print('boom')
-
             await asyncio.sleep(0)
 
 
 async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int):
-    async with TaskPoolExecutor(2) as executor:  # бля заюзать бы его если б не слип 50 чтобы приходил респонс не ноне
+    async with TaskPoolExecutor(2) as executor:  #
+        print("im in shoot!")
         colors_info = ServerResponse(
             (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
-        print("dd", colors_info.response)
         color = [*colors_info.response.keys()][0]
-        print(color)
         shoot_resp = ServerResponse(
             (
                 await web_session.post(
@@ -69,29 +66,8 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
             ).text
         )
         print('id =', [shoot_resp.response.queue.id])
-
-        resp = await wait_for_shoot_info(web_session, shoot_resp.response.queue.id)
-
-        print("77", resp)
-        if resp.response.status != 0 or resp.response.status != 10:
-
-            angleHor = resp.response.dto.shot.angleHorizontal
-            angleVer = resp.response.dto.shot.angleVertical
-            Power = resp.response.dto.shot.power
-
-            if resp.response.stats.status == 20:
-                print(f"АХУЕТЬЬ РАКЕТА НАХУЙ ПОЛЕТЕЛА!!!!\n")
-                with open('.temp.json', 'w+') as f:
-                    existing_json = json.load(f)
-                    existing_json.append(resp.response)
-                    json.dump(existing_json, f, indent=2, ensure_ascii=False)
-            else:
-                print('промах при:')
-            print(f'horizontal: {angleHor}\nvertical: {angleVer}\npower: {Power}\n')
-        else:
-            await asyncio.sleep(0)
-
-    print("93", resp)
+        await asyncio.sleep(1)
+        # resp = await wait_for_shoot_info(web_session, shoot_resp.response.queue.id)
 
 
 async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
@@ -101,13 +77,21 @@ async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
             .text
         )
 
-        print(resp.to_dict())
+        resp = ServerResponse(
+            (await web_session.post('/art/state/queue', data={'id': shoot_id}))
+            .text
+        )
 
         if resp.respone is None or resp.response == [None]:
             await asyncio.sleep(0)
             continue
         break
     return resp
+
+
+async def color_thing(web_session: httpx.AsyncClient):
+    print("122\n", mix_colors((0, 12, 45), (120, 50, 11)))
+
 
 # 1682144585168121910
 
@@ -121,38 +105,22 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_session:
+        # await shoot(web_session, 1, 1, 500)
+
+        oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
         await shoot(web_session, 1, 1, 500)
-        # resp = await web_session.post('/art/colors/list')
-        # # resp = ServerResponse(resp.text)
-        #
-        # with open('.temp.json', 'w') as f:
-        #     json.dump(resp.json(), f, indent=2, ensure_ascii=False)
-        # await check_and_get_colors(web_session) data={'num': color_id, 'tick': tick
-        # используем дату, если мы хотим какую-то хуйню передать и она динамическая
-        # data = {'imageId': '2'}
-        # resp: httpx.Response = await web_session.post(
-        #     '/art/colors/list',
-        #     headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
-        #     # headers={'Content-Disposition': 'form-data; imageId="2"'}
-        #     # data=data
-        # )
-        #
-        # print(resp.status_code)
-        # print(resp.text)
-        # if resp.status_code != 200:
-        #     # print(resp.text)
-        #     raise ResponseError()
-        #
-        # with open('.temp.json', 'w') as f:
-        #     json.dump(resp.json(), f, indent=2, ensure_ascii=False)
-        #
-        # color_list = resp.json()["response"]
-        # red, black = closest_color(color_list)
-        # print(f'самый красный: {red}\nсамый чёрн: {black}')
-        # resp: ServerResponse = ServerResponse(resp.text)
-        # print(resp.info.tick)
-        #
-        # await asyncio.gather(asyncio.create_task(check_and_get_colors(web_session)))
+        shoots, Misses, MissesPartially = await take_info(web_session)
+        # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
+        # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
+        # print(MissesPartially)
+        if MissesPartially - oldMissesPartially == 1:
+            print("попал частично!")
+        elif shoots - oldshoots != (Misses - oldMisses):
+            print("попал полностью!")
+        else:
+            print("не попал")
+
+        # print(take_info)
 
 
 @logger.catch()
@@ -165,8 +133,6 @@ async def check_position(web_session: httpx.AsyncClient):
         data=data
     )
 
-    print(resp.status_code)
-    print(resp.text)
     if resp.status_code != 200:
         print(resp.text)
         raise ResponseError()
@@ -174,10 +140,13 @@ async def check_position(web_session: httpx.AsyncClient):
 
 @logger.catch()
 async def take_info(web_session: httpx.AsyncClient):
-    resp: httpx.Response = await web_session.post(
-        '/art/stage/info',
+    resp = ServerResponse(
+        (await web_session.post('/art/stage/info'))
+        .text
     )
-    return resp
+
+    # return resp
+    return resp.response.stats.shoots, resp.response.stats.shootsMisses, resp.response.stats.shootsMissesPartially
 
     # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
 
