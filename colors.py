@@ -59,7 +59,7 @@ def match_colors_combination(
         target_color: RgbTuple,
         available_colors: dict[RgbTuple | str: int],
         weight: int,
-        stop_distance: int | float | None = None
+        stop_distance: int | float = 0.02
 ) -> dict[RgbTuple: int]:
     if isinstance(list(available_colors.keys())[0], str):
         new_available_colors = {}
@@ -71,8 +71,8 @@ def match_colors_combination(
         del new_available_colors
 
     for variant in (itertools.product(available_colors, repeat=weight)):
-        yield variant
-
+        if distance(mix_colors(*variant), target_color) <= stop_distance:
+            yield variant
 
 # match_colors_combination(
 #     (1, 2, 3),
