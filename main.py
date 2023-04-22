@@ -48,7 +48,6 @@ async def check_and_get_colors(web_session: httpx.AsyncClient):
 
 async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int):
     async with TaskPoolExecutor(2) as executor:  #
-        print("im in shoot!")
         colors_info = ServerResponse(
             (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
         color = [*colors_info.response.keys()][0]
@@ -65,7 +64,8 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
                 )
             ).text
         )
-        print('id =', [shoot_resp.response.queue.id])
+        print(shoot_resp)
+        # print('id =', shoot_resp.response.queue.id)
         await asyncio.sleep(1)
         # resp = await wait_for_shoot_info(web_session, shoot_resp.response.queue.id)
 
@@ -106,21 +106,22 @@ async def main():
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_session:
         # await shoot(web_session, 1, 1, 500)
+        for vertical in range(1, 101, 2):
+            for power in range(1, 1001, 2):
+                oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
+                await shoot(web_session, 1, vertical, power)
+                shoots, Misses, MissesPartially = await take_info(web_session)
 
-        print(json.dumps((await get_pots(web_session)).to_dict()))
+                if MissesPartially - oldMissesPartially == 1:
+                    print("попал частично!")
+                    print(f'vertical: {vertical}\nhorizontal: 1\npower: {power}')
+                elif shoots - oldshoots != (Misses - oldMisses):
+                    print("попал полностью!")
+                    print(f'vertical: {vertical}\nhorizontal: 1\npower: {power}')
+                else:
+                    print("не попал")
 
-        # oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
-        # await shoot(web_session, 1, 1, 500)
-        # shoots, Misses, MissesPartially = await take_info(web_session)
-        # # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
-        # # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
-        # # print(MissesPartially)
-        # if MissesPartially - oldMissesPartially == 1:
-        #     print("попал частично!")
-        # elif shoots - oldshoots != (Misses - oldMisses):
-        #     print("попал полностью!")
-        # else:
-        #     print("не попал")
+        # print(take_info)
 
 
 @logger.catch()
