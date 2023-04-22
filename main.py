@@ -54,7 +54,7 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
             (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
         print("dd", colors_info.response)
         color = [*colors_info.response.keys()][0]
-        print(color)
+        # print(color)
         shoot_resp = ServerResponse(
             (
                 await web_session.post(
@@ -79,7 +79,7 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
             angleVer = resp.response.dto.shot.angleVertical
             Power = resp.response.dto.shot.power
 
-            if resp.response.stats.status == 20:
+            if resp.response.stats.status == 200:
                 print(f"АХУЕТЬЬ РАКЕТА НАХУЙ ПОЛЕТЕЛА!!!!\n")
                 with open('.temp.json', 'w+') as f:
                     existing_json = json.load(f)
@@ -101,7 +101,7 @@ async def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
             .text
         )
 
-        print(resp.to_dict())
+        # print(resp.to_dict())
 
         if resp.respone is None or resp.response == [None]:
             await asyncio.sleep(0)
@@ -121,7 +121,12 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_session:
-        await shoot(web_session, 1, 1, 500)
+
+
+        await shoot(web_session, 0, 66, 460)
+
+        await take_info(web_session)
+
         # resp = await web_session.post('/art/colors/list')
         # # resp = ServerResponse(resp.text)
         #
@@ -177,6 +182,9 @@ async def take_info(web_session: httpx.AsyncClient):
     resp: httpx.Response = await web_session.post(
         '/art/stage/info',
     )
+    with open('.temp.json', 'w') as f:
+        json.dump(resp.json(), f, indent=2, ensure_ascii=False)
+    print(resp)
     return resp
 
     # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
