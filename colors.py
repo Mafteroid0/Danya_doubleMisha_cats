@@ -44,4 +44,4 @@ def closest_color(json_list) -> tuple[RgbTuple, RgbTuple]:
     return closest_red_color, closest_black_color
 
 
-print(mix_colors((255, 0, 0), (0, 255, 0)))
+# def choice_
