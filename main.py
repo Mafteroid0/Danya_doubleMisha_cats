@@ -102,7 +102,11 @@ async def main():
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
     ) as web_client:
-        await shoot(web_client, 1, 1, 500)
+        # await check_color_list(web_client)
+        await shoot(web_client, 0, 45, )
+
+
+
         # resp = await web_client.post('/art/colors/list')
         # # resp = ServerResponse(resp.text)
         #
@@ -137,10 +141,10 @@ async def main():
 
 
 @logger.catch()
-async def check_position(web_client: httpx.AsyncClient):
+async def check_position(web_client: httpx.AsyncClient, id):
     # await check_and_get_colors(web_client)
 
-    data = {"id": "1682103745449907326"}
+    data = {"id": f"{id}"}
     resp: httpx.Response = await web_client.post(
         '/art/state/queue',
         data=data
@@ -161,6 +165,17 @@ async def take_info(web_client: httpx.AsyncClient):
     return resp
 
     # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
+
+@logger.catch()
+async def check_color_list(web_client: httpx.AsyncClient):
+    resp: httpx.Response = await web_client.post(
+        '/art/colors/list',
+    )
+    with open('.temp.json', 'w') as f:
+        json.dump(resp.json(), f, indent=2, ensure_ascii=False)
+    print(resp.status_code)
+    print(resp.text)
+    return resp
 
 
 asyncio.run(main())
