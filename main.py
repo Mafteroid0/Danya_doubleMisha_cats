@@ -52,47 +52,66 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
     async with TaskPoolExecutor(2) as executor:  # бля заюзать бы его если б не слип 50 чтобы приходил респонс не ноне
         colors_info = ServerResponse(
             (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
-        # print("dd", colors_info.response)
-        for color in colors_info.response:
-            data = {
-                'angleHorizontal': horizontal,
-                'angleVertical': vertical,
-                'power': power,
-                f'colors[{color}]': 1
-            }
-            resp = ServerResponse(
-                (await web_session.post('/art/ballista/shoot', data=data)).text)
-            data = {
-                'id': resp.response.queue.id,
-            }
-            print('id=', resp.response.queue.id)
+        print("dd", colors_info.response)
+        color = [*colors_info.response.keys()][0]
+        print(color)
+        shoot_resp = ServerResponse(
+            (
+                await web_session.post(
+                    '/art/ballista/shoot',
+                    data={
+                        'angleHorizontal': horizontal,
+                        'angleVertical': vertical,
+                        'power': power,
+                        f'colors[{color}]': 1
+                    }
+                )
+            ).text
+        )
+        print('id =', [shoot_resp.response.queue.id])
 
-            while True:
-                resp = ServerResponse(
-                    (await web_session.post('/art/state/queue', data=data)).text)
-                if resp.respone == None:
-                    await asyncio.sleep(5)
-                    continue
-                print("77", resp)
-                if resp.response.status != 0 or resp.response.status != 10:
-                    angleHor = resp.response.dto.shot.angleHorizontal
-                    angleVer = resp.response.dto.shot.angleVertical
-                    Power = resp.response.dto.shot.power
-                    if resp.response.stats.status == 20:
-                        print(f"АХУЕТЬЬ РАКЕТА НАХУЙ ПОЛЕТЕЛА!!!!\n")
-                        with open('.temp.json', 'w+') as f:
-                            existing_json = json.load(f)
-                            existing_json.append(resp.response)
-                            json.dump(existing_json, f, indent=2, ensure_ascii=False)
+        resp = await wait_for_shoot_info(web_session, shoot_resp.response.queue.id)
 
-                    else:
-                        print('промах при:')
-                    print(f'horizontal: {angleHor}\nvertical: {angleVer}\npower: {Power}\n')
-                    break
-                else:
-                    await asyncio.sleep(2)
+        print("77", resp)
+        if resp.response.status != 0 or resp.response.status != 10:
+
+            angleHor = resp.response.dto.shot.angleHorizontal
+            angleVer = resp.response.dto.shot.angleVertical
+            Power = resp.response.dto.shot.power
+
+            if resp.response.stats.status == 20:
+                print(f"АХУЕТЬЬ РАКЕТА НАХУЙ ПОЛЕТЕЛА!!!!\n")
+                with open('.temp.json', 'w+') as f:
+                    existing_json = json.load(f)
+                    existing_json.append(resp.response)
+                    json.dump(existing_json, f, indent=2, ensure_ascii=False)
+            else:
+                print('промах при:')
+            print(f'horizontal: {angleHor}\nvertical: {angleVer}\npower: {Power}\n')
+        else:
+            await asyncio.sleep(0)
 
     print("93", resp)
+
+
+def wait_for_shoot_info(web_session: httpx.AsyncClient, shoot_id: int):
+    while True:
+        resp = ServerResponse(
+            (await web_session.post('/art/state/queue', data={'id': shoot_id}))
+            .text
+        )
+
+        print(resp.to_dict())
+
+        if resp.respone is None or resp.response == [None]:
+            await asyncio.sleep(0)
+            continue
+        break
+    return resp
+
+# 1682144585168121910
+
+
 # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
 
 
@@ -101,17 +120,17 @@ async def main():
     async with httpx.AsyncClient(
             base_url='http://api.datsart.dats.team/',
             headers={'Authorization': 'Bearer 643d26392556f643d263925571'}
-    ) as web_client:
-        await shoot(web_client, 1, 1, 500)
-        # resp = await web_client.post('/art/colors/list')
+    ) as web_session:
+        await shoot(web_session, 1, 1, 500)
+        # resp = await web_session.post('/art/colors/list')
         # # resp = ServerResponse(resp.text)
         #
         # with open('.temp.json', 'w') as f:
         #     json.dump(resp.json(), f, indent=2, ensure_ascii=False)
-        # await check_and_get_colors(web_client) data={'num': color_id, 'tick': tick
+        # await check_and_get_colors(web_session) data={'num': color_id, 'tick': tick
         # используем дату, если мы хотим какую-то хуйню передать и она динамическая
         # data = {'imageId': '2'}
-        # resp: httpx.Response = await web_client.post(
+        # resp: httpx.Response = await web_session.post(
         #     '/art/colors/list',
         #     headers={'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW'}
         #     # headers={'Content-Disposition': 'form-data; imageId="2"'}
@@ -133,15 +152,15 @@ async def main():
         # resp: ServerResponse = ServerResponse(resp.text)
         # print(resp.info.tick)
         #
-        # await asyncio.gather(asyncio.create_task(check_and_get_colors(web_client)))
+        # await asyncio.gather(asyncio.create_task(check_and_get_colors(web_session)))
 
 
 @logger.catch()
-async def check_position(web_client: httpx.AsyncClient):
-    # await check_and_get_colors(web_client)
+async def check_position(web_session: httpx.AsyncClient):
+    # await check_and_get_colors(web_session)
 
     data = {"id": "1682103745449907326"}
-    resp: httpx.Response = await web_client.post(
+    resp: httpx.Response = await web_session.post(
         '/art/state/queue',
         data=data
     )
@@ -154,8 +173,8 @@ async def check_position(web_client: httpx.AsyncClient):
 
 
 @logger.catch()
-async def take_info(web_client: httpx.AsyncClient):
-    resp: httpx.Response = await web_client.post(
+async def take_info(web_session: httpx.AsyncClient):
+    resp: httpx.Response = await web_session.post(
         '/art/stage/info',
     )
     return resp
