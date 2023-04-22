@@ -37,6 +37,8 @@ class ShortImage(FriendlyDict):
 class Canvas(FriendlyDict):
     url: str
 
+class Status(FriendlyDict):
+    status: int
 
 class Stats(FriendlyDict):
     userStageId: int
@@ -57,9 +59,11 @@ class ResponseField(FriendlyDict):
     selectedImage: ShortImage
     canvas: Canvas
     stats: Stats
+    status: Status
     queue: Queue
     stage: Stage
     images: list[Image]
+
 
 
 class ServerResponse(FriendlyDict):
