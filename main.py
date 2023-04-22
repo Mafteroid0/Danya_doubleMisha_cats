@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 
 import httpx
 from loguru import logger
@@ -48,9 +49,13 @@ async def check_and_get_colors(web_session: httpx.AsyncClient):
             await asyncio.sleep(0)
 
 
-async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, power: int,
-                factory_color: int):  # надо передать в tuple и список хуярить если цветов нескл
-    async with TaskPoolExecutor(2) as executor:  #
+async def shoot(web_session: httpx.AsyncClient, x: int, y: int, color: RgbTuple, width: int = 1):  # надо передать в tuple и список хуярить если цветов нескл
+    async with TaskPoolExecutor(2) as executor:
+        # color = match_colors_combination(target_pixel, color_list.response, weight=1)
+        radius, horizontal = shoot_calulating(x, y, width)
+        power = (radius * 78.9281) / 564  # await shoot(web_session, horisontal, 1, pwr)  # 42.09 - 42.1
+        # 78.9281 - крайawait shoot(web_session, horizontal=horizontal, vertical=1, power=pwr, factory_color=color)
+
         # colors_info = ServerResponse(
         #     (await web_session.post('/art/colors/list', data={'Content-Type': 'multipart/form-data'})).text)
         # color = [*colors_info.response.keys()][0]
@@ -60,9 +65,9 @@ async def shoot(web_session: httpx.AsyncClient, horizontal: int, vertical: int, 
                     '/art/ballista/shoot',
                     data={
                         'angleHorizontal': horizontal,
-                        'angleVertical': vertical,
+                        'angleVertical': 1,
                         'power': power,
-                        f'colors[{factory_color}]': 1
+                        f'colors[{color}]': 1
                     }
                 )
             ).text
