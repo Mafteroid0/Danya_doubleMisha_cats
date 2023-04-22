@@ -1,6 +1,6 @@
 import functools
 import math
-from typing import Tuple, Any
+from typing import Any
 
 import itertools
 
@@ -148,7 +148,7 @@ def match_colors_combination(
     if target_color in available_colors.keys():
         return target_color,
 
-    for variant in (itertools.product(available_colors, repeat=weight)):
+    for variant in (itertools.product(filter(lambda color: available_colors[color] >= weight, available_colors), repeat=weight)):
         act_distance = distance(mix_colors(*variant), target_color)
 
         if act_distance <= stop_distance:
@@ -165,6 +165,7 @@ def match_colors_combination(
 
     return encode_color(variant_with_min_distance)
 
+
 def encode_color(rgb):
     d = list(rgb[0])
-    return ((d[0] << 16) + (d[1] << 8) + d[2]) #r g b
+    return ((d[0] << 16) + (d[1] << 8) + d[2])  # r g b
