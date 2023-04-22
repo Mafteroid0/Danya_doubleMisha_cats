@@ -60,7 +60,7 @@ def match_colors_combination(
         available_colors: dict[RgbTuple | str: int],
         weight: int,
         stop_distance: int | float = 0.02
-) -> dict[RgbTuple: int]:
+) -> dict[RgbTuple: int] | None:
     if isinstance(list(available_colors.keys())[0], str):
         new_available_colors = {}
 
