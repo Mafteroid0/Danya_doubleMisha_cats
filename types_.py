@@ -113,7 +113,13 @@ class FriendlyDict(KeyToAttrMixin):
             if isinstance(first_arg, str):
                 first_arg = json.loads(first_arg)
             try:
-                kwargs.update(first_arg)
+                # print(f'{first_arg=}')
+                if isinstance(first_arg, list):
+                    pass  # TOOD: Сделать нормальную обработку списков
+                    # for index, item in enumerate(first_arg):
+                    #     first_arg[index] = self._make_dict_available()
+                else:
+                    kwargs.update(first_arg)
             except TypeError as e:
                 print(first_arg)
                 raise e

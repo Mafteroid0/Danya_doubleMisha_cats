@@ -159,6 +159,11 @@ async def take_info(web_session: httpx.AsyncClient):
     # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
 
 
+async def get_pots(web_session: httpx.AsyncClient):
+    resp = ServerResponse((await web_session.post('/art/colors/list')).text)
+    return resp
+
+
 asyncio.run(main())
 
 # TODO: Сделать функции с вводом параметров
