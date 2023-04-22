@@ -107,20 +107,20 @@ async def main():
     ) as web_session:
         # await shoot(web_session, 1, 1, 500)
 
-        oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
-        await shoot(web_session, 1, 1, 500)
-        shoots, Misses, MissesPartially = await take_info(web_session)
-        # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
-        # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
-        # print(MissesPartially)
-        if MissesPartially - oldMissesPartially == 1:
-            print("попал частично!")
-        elif shoots - oldshoots != (Misses - oldMisses):
-            print("попал полностью!")
-        else:
-            print("не попал")
+        print(json.dumps((await get_pots(web_session)).to_dict()))
 
-        # print(take_info)
+        # oldshoots, oldMisses, oldMissesPartially = await take_info(web_session)
+        # await shoot(web_session, 1, 1, 500)
+        # shoots, Misses, MissesPartially = await take_info(web_session)
+        # # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
+        # # print(shoots, "-", oldshoots, "!=", Misses, "-", oldMisses)
+        # # print(MissesPartially)
+        # if MissesPartially - oldMissesPartially == 1:
+        #     print("попал частично!")
+        # elif shoots - oldshoots != (Misses - oldMisses):
+        #     print("попал полностью!")
+        # else:
+        #     print("не попал")
 
 
 @logger.catch()
@@ -149,6 +149,11 @@ async def take_info(web_session: httpx.AsyncClient):
     return resp.response.stats.shoots, resp.response.stats.shootsMisses, resp.response.stats.shootsMissesPartially
 
     # TODO: Добавить цикл main.data.power = i inrange(0, 1000, 10) который берёт случайную краску со склада и стеляет (отправляет запрос) Нужно будет посмотреть при каких параметрах происходят попадания
+
+
+async def get_pots(web_session: httpx.AsyncClient):
+    resp = ServerResponse((await web_session.post('/art/colors/list')).text)
+    return resp
 
 
 asyncio.run(main())
