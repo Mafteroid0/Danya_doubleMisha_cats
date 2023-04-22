@@ -1,3 +1,5 @@
+from typing import overload
+
 from types_ import FriendlyDict
 
 
@@ -67,3 +69,6 @@ class ServerResponse(FriendlyDict):
     status: int
     info: ResponseInfo
     response: ResponseField
+
+
+RgbTuple = tuple[int, int, int]
